@@ -3,12 +3,12 @@
 var w=$(window).width();
 var h=$(window).height();
 
-var circleWidth=5;
+var circleWidth=2;
 
 var force = d3.layout.force()
-				.charge(-100)
+				.charge(-10)
 				.gravity(0.2)
-				.linkDistance(5)
+				.linkDistance(3)
 				.size([w, h])
 				.on('tick', tick)
 
@@ -26,40 +26,62 @@ var nodes=[], links=[];
 var node = svg.selectAll('circle'),
 	link = svg.selectAll('line')
 
+sendWrapper(null, 'http://wikipedia.org');
 
-sendRequest('http://localhost:1337', 'url=http://wikipedia.org', function() {
-	var data_arr = this.data.split('\n');
-	var parent_node = {
-		name: 'http://wikipedia.org',
-		parent: null
-	}
-	for (var i in data_arr) {
-		nodes.push({
-			name: data_arr[i],
-			parent: parent_node
-		})
+function sendWrapper(parent_var, url_var) {
+	sendRequest('http://localhost:1337', 'url=' + url_var, function() {
+		var data_arr = this.data.split('\n');
+		var parent_node = {
+			name: url_var,
+			parent: parent_var
+		}
+		nodes.push(parent_node)
 
-		links.push({
-			source: nodes[i],
-			target: nodes[i].parent
-		})
-	}
-	nodes.push(parent_node)
+		for (var i in data_arr) {
+			nodes.push({
+				name: data_arr[i],
+				parent: parent_node
+			})
+		}
 
-	node = svg.selectAll('circle')
-				.data(nodes)
-				.enter().append('g')
-					.append('circle')
-						.attr({
-							'r' : circleWidth,
-							'fill' : function(d) {
-								if(d.parent == null) return palette.pink;
-								return palette.blue;
-							}
-						})
+		for (var i in nodes) {
+			if(nodes[i].parent) {
+				links.push({
+					source: nodes[i],
+					target: nodes[i].parent
+				})
+			}
+		}
 
-	force.nodes(nodes).links(links).start()
-})
+		console.log(links);
+		console.log(nodes);
+
+		link.remove();
+		link = svg_g.selectAll('line')
+					.data(links)
+					.enter().append('line')
+						.attr('stroke', palette.gray)
+
+		node.remove();
+		node = svg_g.selectAll('circle')
+					.data(nodes)
+					.enter().append('g')
+						.append('circle')
+							.attr({
+								'r' : circleWidth,
+								'fill' : function(d) {
+									if(d.parent == null) return palette.pink;
+									return palette.blue;
+								}
+							})
+							.on('click', function(d) {
+								console.log(d)
+								sendWrapper(d, d.name);
+							})
+
+		force.nodes(nodes).links(links).start()
+	})
+}
 
 function sendRequest(host, post_data, callback) {
 	var xmlHttp = new XMLHttpRequest();
