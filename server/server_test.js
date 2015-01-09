@@ -5,7 +5,7 @@ http.createServer(function (req, res) {
 	var postData = {};
 
 	if(req.method == 'POST') {
-		var buffer = "";
+		var buffer = '';
 		req.on('data', function(data) {
 			buffer += data;
 			if (buffer.length > 1e6)
@@ -16,14 +16,14 @@ http.createServer(function (req, res) {
 
 			jsdom.env(
 				postData.url,
-				["http://code.jquery.com/jquery.js"],
+				['http://code.jquery.com/jquery.js'],
 				function (errors, window) {
 					var links = window.$("a");
 					console.log(links.length + ' links for ' + postData.url)
 
 					var buffer = ""
 					for(var i in links) {
-						if(links[i].href && links[i].href.indexOf("wikipedia.org") > -1) {
+						if(links[i].href && links[i].href.indexOf("wikipedia.org") > -1 && links[i].href.indexOf(postData.url) == -1) {
 							buffer += links[i].href + '\n'
 						}
 					}
