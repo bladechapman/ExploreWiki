@@ -31,11 +31,19 @@ sendWrapper(null, 'http://wikipedia.org');
 function sendWrapper(parent_var, url_var) {
 	sendRequest('http://localhost:1337', 'url=' + url_var, function() {
 		var data_arr = this.data.split('\n');
-		var parent_node = {
-			name: url_var,
-			parent: parent_var
+		console.log(data_arr.length);
+
+		var parent_node;
+		if (parent_var == null) {
+			parent_node = {
+				name: url_var,
+				parent: parent_var,
+				root: true
+			}
+			nodes.push(parent_node)
 		}
-		nodes.push(parent_node)
+		else parent_node = parent_var;
+
 
 		for (var i in data_arr) {
 			nodes.push({
@@ -43,7 +51,6 @@ function sendWrapper(parent_var, url_var) {
 				parent: parent_node
 			})
 		}
-
 		for (var i in nodes) {
 			if(nodes[i].parent) {
 				links.push({
@@ -53,14 +60,11 @@ function sendWrapper(parent_var, url_var) {
 			}
 		}
 
-		console.log(links);
-		console.log(nodes);
-
-		link.remove();
-		link = svg_g.selectAll('line')
-					.data(links)
-					.enter().append('line')
-						.attr('stroke', palette.gray)
+		// link.remove();
+		// link = svg_g.selectAll('line')
+		// 			.data(links)
+		// 			.enter().append('line')
+		// 				.attr('stroke', palette.gray)
 
 		node.remove();
 		node = svg_g.selectAll('circle')
@@ -70,12 +74,17 @@ function sendWrapper(parent_var, url_var) {
 							.attr({
 								'r' : circleWidth,
 								'fill' : function(d) {
-									if(d.parent == null) return palette.pink;
+									if(d.root == true) return palette.pink;
 									return palette.blue;
 								}
 							})
 							.on('click', function(d) {
-								console.log(d)
+								d.root = true;
+
+								for (var i in nodes) {
+									nodes[i].fixed = true;
+								}
+
 								sendWrapper(d, d.name);
 							})
 
