@@ -21,44 +21,65 @@ var svg = d3.select('#chart')
 var svg_g = svg.append('g')
 					.attr('id', 'svg_g');
 
-var nodes=[], links=[];
+var nodes_dict = {};
 
 var node = svg.selectAll('circle'),
 	link = svg.selectAll('line')
 
-sendWrapper(null, 'http://wikipedia.org');
+sendWrapper(null, 'http://en.wikipedia.org/wiki/JavaScript');
 
 function sendWrapper(parent_var, url_var) {
 	sendRequest('http://localhost:1337', 'url=' + url_var, function() {
 		var data_arr = this.data.split('\n');
-		console.log(data_arr.length);
 
 		var parent_node;
 		if (parent_var == null) {
 			parent_node = {
 				name: url_var,
-				parent: parent_var,
+				parent: [null],
 				root: true
 			}
-			nodes.push(parent_node)
+			nodes_dict[parent_node.name] = parent_node;
 		}
 		else parent_node = parent_var;
 
-
 		for (var i in data_arr) {
-			nodes.push({
-				name: data_arr[i],
-				parent: parent_node
-			})
-		}
-		for (var i in nodes) {
-			if(nodes[i].parent) {
-				links.push({
-					source: nodes[i],
-					target: nodes[i].parent
-				})
+			if (data_arr[i] in nodes_dict && nodes_dict[data_arr[i]].parent.indexOf(parent_node) == -1) {
+				nodes_dict[data_arr[i]].parent.push(parent_node);
+			}
+			else {
+				nodes_dict[data_arr[i]] = {
+					name: data_arr[i],
+					parent: [parent_node]
+				}
 			}
 		}
+
+		var nodes=[], links=[];
+		for(var i in nodes_dict) {
+			nodes.push(nodes_dict[i])
+		}
+		for(var i in nodes) {
+			if(nodes[i].parent) {
+				for(var k in nodes[i].parent) {
+					if(nodes[i].parent[k]) {
+						links.push({
+							source: nodes[i],
+							target: nodes[i].parent[k]
+						})
+					}
+				}
+			}
+		}
+
+		// for (var i in nodes) {
+		// 	if(nodes[i].parent) {
+		// 		links.push({
+		// 			source: nodes[i],
+		// 			target: nodes[i].parent
+		// 		})
+		// 	}
+		// }
 
 		// link.remove();
 		// link = svg_g.selectAll('line')
@@ -78,12 +99,15 @@ function sendWrapper(parent_var, url_var) {
 									return palette.blue;
 								}
 							})
+							.on('mouseover', function(d) {
+								$('#info').text('url: ' + d.name)
+							})
 							.on('click', function(d) {
 								d.root = true;
 
-								for (var i in nodes) {
-									nodes[i].fixed = true;
-								}
+								// for (var i in nodes) {
+								// 	nodes[i].fixed = true;
+								// }
 
 								sendWrapper(d, d.name);
 							})
