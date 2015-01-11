@@ -1,12 +1,12 @@
 
 
-var w=3*$(window).width();
-var h=3*$(window).height();
+var w=$(window).width();
+var h=$(window).height();
 
 var circleWidth=3;
 
 var force = d3.layout.force()
-				.charge(-100)
+				.charge(-50)
 				.gravity(0.2)
 				.linkDistance(5)
 				.size([w, h])
@@ -22,53 +22,78 @@ var svg_g = svg.append('g')
 					.attr('id', 'svg_g');
 
 var nodes_dict = {};
-
 var node = svg.selectAll('circle'),
-	link = svg.selectAll('line')
+	link = svg.selectAll('line');
 
 sendWrapper(null, 'http://en.wikipedia.org/wiki/JavaScript');
 
 // REFACTOR THIS
 function refreshNodes(data_arr, nodes, links, parent_var, url_var) {
+	if (!data_arr || data_arr == []) return;
+
 	var parent_node;
-	if (parent_var == null) {
+	if (!parent_var) {
 		parent_node = {
 			name: url_var,
 			parent: [],
-			not_visible: false,
-			root: true
+			is_visible: true,
+			root: true,
+			collapsed: false
 		}
-		nodes_dict[parent_node.name] = parent_node;
 	}
-	else parent_node = parent_var;
+	else {
+		parent_node = parent_var;
+		parent_node.root = true;
+		parent_node.is_visible = true;
+		parent_node.collapsed = (parent_node.collapsed) ? false : true
+	}
 
-	for (var i in data_arr) {
-		if (data_arr[i] == "" || data_arr[i].split('/').indexOf('en.wikipedia.org') == -1) continue;
-		if (data_arr[i] in nodes_dict) {
-			if (nodes_dict[data_arr[i]].parent.indexOf(parent_node) == -1) {
-				nodes_dict[data_arr[i]].parent.push(parent_node);
+	nodes_dict[parent_node.name] = parent_node;
+	data_arr.forEach(function(data_name) {
+		if(data_name == "" || data_name.indexOf('en.wikipedia.org/') == -1 || data_name.indexOf('/wiki') == -1 || data_name.indexOf('#') != -1)
+			return;
+
+		if (data_name in nodes_dict) {
+			if (nodes_dict[data_name].parent.indexOf(parent_node) == -1) {
+				nodes_dict[data_name].parent.push(parent_node);
+				nodes_dict[data_name].is_visible = true;
 			}
 		}
 		else {
-			nodes_dict[data_arr[i]] = {
-				name: data_arr[i],
+			nodes_dict[data_name] = {
+				name: data_name,
 				parent: [parent_node],
-				not_visible: false
+				is_visible: true,
+				root: false,
+				collapsed: true
 			}
+		}
+	})
+
+	for (var i in nodes_dict) {
+		if(!nodes_dict[i].root) {
+			nodes_dict[i].is_visible = false;
+			for (var k in nodes_dict[i].parent) {
+				if (!nodes_dict[i].parent[k].collapsed) {
+					nodes_dict[i].is_visible = true;
+				}
+			}
+		}
+		else {
+			nodes_dict[i].is_visible = true;
 		}
 	}
 
-	for(var i in nodes_dict) {
-		if(!nodes_dict[i].not_visible) nodes.push(nodes_dict[i])
+	for (var i in nodes_dict) {
+		if (nodes_dict[i].is_visible)
+			nodes.push(nodes_dict[i])
 	}
 	for (var i in nodes) {
-		if(nodes[i].parent) {
-			for (var k in nodes[i].parent) {
-					links.push({
-					source: nodes[i],
-					target: nodes[i].parent[k]
-				})
-			}
+		for (var k in nodes[i].parent) {
+			links.push({
+				source: nodes[i],
+				target: nodes[i].parent[k]
+			})
 		}
 	}
 }
@@ -92,7 +117,10 @@ function refreshSim(parent_var, url_var) {
 				.enter().append('g')
 					.append('circle')
 						.attr({
-							'r' : circleWidth,
+							'r' : function(d) {
+								if(d.root && !d.collapsed) return 2 * circleWidth;
+								return circleWidth;
+							},
 							'fill' : function(d) {
 								if(d.root == true) return palette.pink;
 								return palette.blue;
@@ -103,25 +131,7 @@ function refreshSim(parent_var, url_var) {
 						})
 						.on('click', function(d) {
 							console.log('click')
-
-							if(d.root == true) {
-								for(var i in nodes_dict) {
-									if (nodes_dict[i].parent.indexOf[d] != -1) {
-										console.log('test')
-										nodes_dict[i].not_visible = false;
-									}
-								}
-								refreshSim(d);
-							} else {
-								d.root = true;
-								d.not_visible = false;
-
-								for(var i in nodes_dict) {
-									if (!nodes_dict[i].root) nodes_dict[i].not_visible = true;
-								}
-								sendWrapper(d, d.name);
-							}
-
+							sendWrapper(d, d.name);
 						})
 
 	force.nodes(nodes).links(links).start()
