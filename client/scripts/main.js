@@ -29,7 +29,7 @@ sendWrapper(null, 'http://en.wikipedia.org/wiki/JavaScript');
 
 // REFACTOR THIS
 function refreshNodes(data_arr, nodes, links, parent_var, url_var) {
-	if (!data_arr || data_arr == []) return;
+	if (!data_arr) return;
 
 	var parent_node;
 	if (!parent_var) {
@@ -131,8 +131,12 @@ function refreshSim(parent_var, url_var) {
 						})
 						.on('click', function(d) {
 							console.log('click')
-							sendWrapper(d, d.name);
-						})
+							if (!d.root) sendWrapper(d, d.name);
+							else {
+								this.data = "";
+								refreshSim(d, d.name);
+							}
+						}.bind(this))
 
 	force.nodes(nodes).links(links).start()
 }
