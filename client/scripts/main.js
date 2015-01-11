@@ -3,12 +3,12 @@
 var w=$(window).width();
 var h=$(window).height();
 
-var circleWidth=2;
+var circleWidth=5;
 
 var force = d3.layout.force()
-				.charge(-10)
+				.charge(-100)
 				.gravity(0.2)
-				.linkDistance(3)
+				.linkDistance(10)
 				.size([w, h])
 				.on('tick', tick)
 
@@ -36,7 +36,8 @@ function sendWrapper(parent_var, url_var) {
 		if (parent_var == null) {
 			parent_node = {
 				name: url_var,
-				parent: [null],
+				parent: [],
+				not_visible: false,
 				root: true
 			}
 			nodes_dict[parent_node.name] = parent_node;
@@ -44,48 +45,46 @@ function sendWrapper(parent_var, url_var) {
 		else parent_node = parent_var;
 
 		for (var i in data_arr) {
-			if (data_arr[i] in nodes_dict && nodes_dict[data_arr[i]].parent.indexOf(parent_node) == -1) {
-				nodes_dict[data_arr[i]].parent.push(parent_node);
+			if (data_arr[i] == "" || data_arr[i].split('/').indexOf('en.wikipedia.org') == -1) continue;
+			if (data_arr[i] in nodes_dict) {
+				// if (nodes_dict[data_arr[i]].root == true) {
+				// 	continue;
+				// }
+				if (nodes_dict[data_arr[i]].parent.indexOf(parent_node) == -1) {
+					nodes_dict[data_arr[i]].parent.push(parent_node);
+				}
 			}
 			else {
 				nodes_dict[data_arr[i]] = {
 					name: data_arr[i],
-					parent: [parent_node]
+					parent: [parent_node],
+					not_visible: false
 				}
 			}
 		}
 
 		var nodes=[], links=[];
 		for(var i in nodes_dict) {
-			nodes.push(nodes_dict[i])
+			if(!nodes_dict[i].not_visible) nodes.push(nodes_dict[i])
 		}
-		for(var i in nodes) {
+		for (var i in nodes) {
 			if(nodes[i].parent) {
-				for(var k in nodes[i].parent) {
-					if(nodes[i].parent[k]) {
+				for (var k in nodes[i].parent) {
 						links.push({
-							source: nodes[i],
-							target: nodes[i].parent[k]
-						})
-					}
+						source: nodes[i],
+						target: nodes[i].parent[k]
+					})
 				}
 			}
 		}
 
-		// for (var i in nodes) {
-		// 	if(nodes[i].parent) {
-		// 		links.push({
-		// 			source: nodes[i],
-		// 			target: nodes[i].parent
-		// 		})
-		// 	}
-		// }
-
-		// link.remove();
-		// link = svg_g.selectAll('line')
-		// 			.data(links)
-		// 			.enter().append('line')
-		// 				.attr('stroke', palette.gray)
+		link.remove();
+		link = svg_g.selectAll('line')
+					.data(links)
+					.enter().append('line')
+						.attr('stroke', function(d) {
+							if(d.source.root && d.target.root) return palette.gray;
+						})
 
 		node.remove();
 		node = svg_g.selectAll('circle')
@@ -103,7 +102,12 @@ function sendWrapper(parent_var, url_var) {
 								$('#info').text('url: ' + d.name)
 							})
 							.on('click', function(d) {
+								console.log('click')
 								d.root = true;
+								d.not_visible = false;
+								for(var i in nodes_dict) {
+									if (!nodes_dict[i].root) nodes_dict[i].not_visible = true;
+								}
 
 								// for (var i in nodes) {
 								// 	nodes[i].fixed = true;
