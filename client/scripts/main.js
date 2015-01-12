@@ -3,12 +3,12 @@
 var w = 600;
 var h = 600;
 
-var circleWidth=4;
+var circleWidth=6;
 
 var force = d3.layout.force()
-				.charge(-100)
+				.charge(-200)
 				.gravity(0.2)
-				.linkDistance(10)
+				.linkDistance(17)
 				.size([w, h])
 				.on('tick', function() {
 					setTimeout(tick, 0)
@@ -163,7 +163,11 @@ function refreshSim(parent_var, url_var) {
 					.data(nodes)
 					.enter().append('li')
 						.text(function(d) {
-							return d.name;
+							return decodeURI(d.name.split('wiki/')[d.name.split('wiki/').length - 1]).replace('_', ' ');
+						})
+						.style('font-weight', function(d) {
+							if(d.root) return 'bold';
+							return 'light';
 						})
 						.on('mouseover', function(d) {	//DRY THIS
 							$('#about').html('url:' + d.name)
