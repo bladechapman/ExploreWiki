@@ -36,8 +36,6 @@ var node = svg.selectAll('circle'),
 	link = svg.selectAll('line'),
 	list_elem = list.selectAll('li')
 
-sendWrapper(null, 'http://en.wikipedia.org/wiki/JavaScript');
-
 function refreshNodes(data_arr, nodes, links, parent_var, url_var) {
 	if (!data_arr) return;
 
@@ -109,6 +107,8 @@ function refreshNodes(data_arr, nodes, links, parent_var, url_var) {
 }
 
 function refreshSim(parent_var, url_var) {
+	if($('#loading')) $('#loading').remove()
+
 	var nodes=[], links=[];
 	var data_arr = this.data.split('\n');
 	refreshNodes(data_arr, nodes, links, parent_var, url_var);
@@ -163,7 +163,7 @@ function refreshSim(parent_var, url_var) {
 					.data(nodes)
 					.enter().append('li')
 						.text(function(d) {
-							return decodeURI(d.name.split('wiki/')[d.name.split('wiki/').length - 1]).replace('_', ' ');
+							return decodeURI(d.name.split('wiki/')[d.name.split('wiki/').length - 1]).replace(/_/g, ' ');
 						})
 						.style('font-weight', function(d) {
 							if(d.root) return 'bold';
@@ -192,6 +192,7 @@ function refreshSim(parent_var, url_var) {
 }
 
 function sendWrapper(parent_var, url_var) {
+	$('#app').append("<div id='loading'>loading</div>")
 	sendPostRequest('http://localhost:1337', 'url=' + url_var, refreshSim, parent_var, url_var)
 }
 
@@ -232,3 +233,16 @@ function rescale() {
 			"translate(" + trans + ")"
 			+ " scale(" + scale + ")");
 }
+
+
+// sendWrapper(null, 'http://en.wikipedia.org/wiki/JavaScript');
+$('#submit').click(function() {
+	if($('#start').val().indexOf('en.wikipedia.org') != -1) {
+		if($('#start').val().indexOf('http://') == -1)
+			$('#start').val('http://' + $('#start').val())
+		nodes_dict = {};
+		$('#about').html('')
+		sendWrapper(null, $('#start').val());
+	}
+})
+
