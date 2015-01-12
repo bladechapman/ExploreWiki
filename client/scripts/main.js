@@ -1,23 +1,27 @@
 
 
-var w=$(window).width();
-var h=$(window).height();
+var w = 600;
+var h = 600;
 
-var circleWidth=3;
+var circleWidth=4;
 
 var force = d3.layout.force()
-				.charge(-50)
+				.charge(-100)
 				.gravity(0.2)
-				.linkDistance(5)
+				.linkDistance(10)
 				.size([w, h])
-				.on('tick', tick)
+				.on('tick', function() {
+					setTimeout(tick, 0)
+				})
 
 var svg = d3.select('#chart')
 				.append('svg')
 				.attr({
 					'width' : w,
-					'height' : h
-				});
+					'height' : h,
+					'id' : 'graphic'
+				})
+				.call(d3.behavior.zoom().on('zoom', rescale));
 var svg_g = svg.append('g')
 					.attr('id', 'svg_g');
 
@@ -65,7 +69,7 @@ function refreshNodes(data_arr, nodes, links, parent_var, url_var) {
 				parent: [parent_node],
 				is_visible: true,
 				root: false,
-				collapsed: true
+				collapsed: true,
 			}
 		}
 	})
@@ -164,13 +168,21 @@ function tick() {
 	node
 		.attr('transform', function(d, i) {
 			return 'translate(' + d.x + ', ' + d.y + ')';
-		})
+		});
 
 	link
 		.attr('x1', function(d) {return d.source.x; })
         .attr('y1', function(d) {return d.source.y; })
         .attr('x2', function(d) {return d.target.x; })
-        .attr('y2', function(d) {return d.target.y; })
+        .attr('y2', function(d) {return d.target.y; });
 }
 
+function rescale() {
 
+	var trans = d3.event.translate;
+	var scale = d3.event.scale;
+
+	svg_g.attr("transform",
+			"translate(" + trans + ")"
+			+ " scale(" + scale + ")");
+}
