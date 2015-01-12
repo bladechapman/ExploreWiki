@@ -14,6 +14,10 @@ var force = d3.layout.force()
 					setTimeout(tick, 0)
 				})
 
+var info = d3.select('#info')
+				.append('ul')
+					.attr('id', 'list')
+
 var svg = d3.select('#chart')
 				.append('svg')
 				.attr({
@@ -31,7 +35,6 @@ var node = svg.selectAll('circle'),
 
 sendWrapper(null, 'http://en.wikipedia.org/wiki/JavaScript');
 
-// REFACTOR THIS
 function refreshNodes(data_arr, nodes, links, parent_var, url_var) {
 	if (!data_arr) return;
 
@@ -107,6 +110,11 @@ function refreshSim(parent_var, url_var) {
 	var data_arr = this.data.split('\n');
 	refreshNodes(data_arr, nodes, links, parent_var, url_var);
 
+	$('#list').html('')
+	for (var i in nodes) {
+		info.append('li').text(nodes[i].name)
+	}
+
 	link.remove();
 	link = svg_g.selectAll('line')
 				.data(links)
@@ -119,28 +127,29 @@ function refreshSim(parent_var, url_var) {
 	node = svg_g.selectAll('circle')
 				.data(nodes)
 				.enter().append('g')
-					.append('circle')
-						.attr({
-							'r' : function(d) {
-								if(d.root && !d.collapsed) return 2 * circleWidth;
-								return circleWidth;
-							},
-							'fill' : function(d) {
-								if(d.root == true) return palette.pink;
-								return palette.blue;
-							}
-						})
-						.on('mouseover', function(d) {
-							$('#info').text('url: ' + d.name)
-						})
-						.on('click', function(d) {
-							console.log('click')
-							if (!d.root) sendWrapper(d, d.name);
-							else {
-								this.data = "";
-								refreshSim(d, d.name);
-							}
-						}.bind(this))
+					.on('mouseover', function(d) {
+						// $('#info').text('url: ' + d.name)
+					})
+					.on('click', function(d) {
+						console.log('click')
+						if (!d.root) sendWrapper(d, d.name);
+						else {
+							this.data = "";
+							refreshSim(d, d.name);
+						}
+					}.bind(this))
+
+	node.append('circle')
+			.attr({
+				'r' : function(d) {
+					if(d.root && !d.collapsed) return 2 * circleWidth;
+					return circleWidth;
+				},
+				'fill' : function(d) {
+					if(d.root == true) return palette.pink;
+					return palette.blue;
+				}
+			})
 
 	force.nodes(nodes).links(links).start()
 }
