@@ -235,7 +235,6 @@ function rescale() {
 }
 
 
-// sendWrapper(null, 'http://en.wikipedia.org/wiki/JavaScript');
 $('#submit').click(function() {
 	if($('#start').val().indexOf('en.wikipedia.org') != -1) {
 		if($('#start').val().indexOf('http://') == -1)
