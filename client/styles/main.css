@@ -1,4 +1,14 @@
+
 #graphic {
 	border-style: solid;
 	border-color: #475B62;
+}
+#chart {
+	float: right;
+}
+#list {
+	float: left;
+	height: 90vh;
+	width: 50%;
+	overflow: auto;
 }

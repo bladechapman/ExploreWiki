@@ -15,7 +15,9 @@ var force = d3.layout.force()
 				})
 
 var info = d3.select('#info')
-				.append('ul')
+var about = info.append('p')
+					.attr('id', 'about');
+var list = info.append('ul')
 					.attr('id', 'list')
 
 var svg = d3.select('#chart')
@@ -31,7 +33,8 @@ var svg_g = svg.append('g')
 
 var nodes_dict = {};
 var node = svg.selectAll('circle'),
-	link = svg.selectAll('line');
+	link = svg.selectAll('line'),
+	list_elem = list.selectAll('li')
 
 sendWrapper(null, 'http://en.wikipedia.org/wiki/JavaScript');
 
@@ -110,11 +113,6 @@ function refreshSim(parent_var, url_var) {
 	var data_arr = this.data.split('\n');
 	refreshNodes(data_arr, nodes, links, parent_var, url_var);
 
-	$('#list').html('')
-	for (var i in nodes) {
-		info.append('li').text(nodes[i].name)
-	}
-
 	link.remove();
 	link = svg_g.selectAll('line')
 				.data(links)
@@ -124,20 +122,9 @@ function refreshSim(parent_var, url_var) {
 					})
 
 	node.remove();
-	node = svg_g.selectAll('circle')
+	node = svg_g.selectAll('g')
 				.data(nodes)
 				.enter().append('g')
-					.on('mouseover', function(d) {
-						// $('#info').text('url: ' + d.name)
-					})
-					.on('click', function(d) {
-						console.log('click')
-						if (!d.root) sendWrapper(d, d.name);
-						else {
-							this.data = "";
-							refreshSim(d, d.name);
-						}
-					}.bind(this))
 
 	node.append('circle')
 			.attr({
@@ -145,11 +132,57 @@ function refreshSim(parent_var, url_var) {
 					if(d.root && !d.collapsed) return 2 * circleWidth;
 					return circleWidth;
 				},
+			})
+			.style({
 				'fill' : function(d) {
 					if(d.root == true) return palette.pink;
 					return palette.blue;
 				}
 			})
+			.on('mouseover', function(d) {	//DRY THIS
+				$('#about').html('url:' + d.name)
+				svg_g.selectAll('circle').style('fill', function(e) {
+					if(d == e) {
+						return palette.black;
+					}
+					else if(e.root == true) return palette.pink;
+					return palette.blue;
+				})
+			})
+			.on('click', function(d) {
+				console.log('click')
+				if (!d.root) sendWrapper(d, d.name);
+				else {
+					this.data = "";
+					refreshSim(d, d.name);
+				}
+			}.bind(this))
+
+	list_elem.remove();
+	list_elem = list.selectAll('li')
+					.data(nodes)
+					.enter().append('li')
+						.text(function(d) {
+							return d.name;
+						})
+						.on('mouseover', function(d) {	//DRY THIS
+							$('#about').html('url:' + d.name)
+							svg_g.selectAll('circle').style('fill', function(e) {
+								if(d == e) {
+									return palette.black;
+								}
+								else if(e.root == true) return palette.pink;
+								return palette.blue;
+							})
+						})
+						.on('click', function(d) {	//DRY THIS
+							console.log('click')
+							if (!d.root) sendWrapper(d, d.name);
+							else {
+								this.data = "";
+								refreshSim(d, d.name);
+							}
+						}.bind(this))
 
 	force.nodes(nodes).links(links).start()
 }
