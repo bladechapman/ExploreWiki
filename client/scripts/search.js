@@ -1,33 +1,68 @@
 // network optimization: event based recalculation? (send request and continue dijkstra's. When request is received, redo calc if not found)
 
 var start = 'http://en.wikipedia.org/wiki/Wikipedia:Wiki_Game';
-var end = 'http://en.wikipedia.org/wiki/Wikipedia'
+// var end = 'http://en.wikipedia.org/wiki/Wikipedia';
+var end = 'http://en.wikipedia.org/wiki/Flammability'
+
+var connections = [];
+
+var loaded = {};
+var unvisited = {};	// ensure these sets are exclusive
+var visited = {};
+
+var found = false;
 
 initialize(start, end)
 
 function initialize(start, end) {
-	var loaded = {};
-	var unvisited = {};	// ensure these sets are exclusive
-	var visited = {};
+	this.addEventListener('data_received', iterate)
+	loaded = {};
+	unvisited = {};
+	visited = {};
+	found = false;
 
 	// initialize
-	sendWrapper(start, unvisited, visited, loaded, start);
+	sendWrapper(start);
 }
 
-function search(start, end, unvisited, visited, loaded) {
-	while(!isEmpty(unvisited)) {
-		var min_node = findMinDistNode(unvisited);
-		visited[min_node.name] = min_node;
-		delete unvisited[min_node.name];
 
-		// FIX THIS SHIT
-		for (var i in min_node.neighbors) {
-			sendWrapper(min_node.name, min_node[i], visited, unvisited, loaded, min_node.name)
-		}
+function iterate() {
+	var min_node = findMinDistNode(unvisited);
+
+	visited[min_node.name] = min_node;
+	delete unvisited[min_node.name];
+
+	if (min_node.name == end) {
+		console.log('---------- FOUND ----------');
+		found = true;
+		this.removeEventListener('data_received', iterate);
+		console.log(findPath(min_node));
+		return;
 	}
+
+	console.log('-------- MIN NODE --------')
+	console.log(min_node)
+
+	console.log('-------- NEIGHBORS --------');
+
+	for (var i in min_node.neighbors) {
+		tent_dist = min_node.dist + 1;
+		if (tent_dist < min_node.neighbors[i].dist) {
+			console.log('-------- MINIFIED --------');
+			min_node.neighbors[i].dist = tent_dist;
+			min_node.neighbors[i].prev = min_node;
+			console.log(min_node.neighbors[i])
+		}
+
+		if (!min_node.neighbors[i].loaded) sendWrapper(min_node.neighbors[i].name);
+	}
+
+	if (!isEmpty(unvisited)) iterate();
 }
 
-function addData(unvisited, visited, loaded, url_to_load) {
+function addData(url_to_load) {
+	if (found) return;
+
 	var data_arr = this.data.split('\n');
 	data_arr.push(url_to_load);
 	for (var i in data_arr) {
@@ -76,12 +111,13 @@ function addData(unvisited, visited, loaded, url_to_load) {
 	console.log(visited);
 	console.log(unvisited);
 
-	search(start, end, unvisited, visited, loaded);
+	var event = new CustomEvent('data_received', {'detail' : {'loaded_url' : url_to_load}});
+	this.dispatchEvent(event);
 }
 
-function sendWrapper(url_var, unvisited, visited, loaded, url_to_load) {
-	console.log('network sent');
-	sendPostRequest('http://localhost:1337', 'url=' + url_var, addData, unvisited, visited, loaded, url_to_load)
+function sendWrapper(url_var) {
+	console.log('-------- SEND --------');
+	sendPostRequest('http://localhost:1337', 'url=' + url_var, addData, url_var)
 }
 
 function sendPostRequest(host, post_data, callback) {
@@ -89,10 +125,10 @@ function sendPostRequest(host, post_data, callback) {
 	xmlHttp.open('POST', host, true);
 	xmlHttp.setRequestHeader('Content-type','text/plain');
 	xmlHttp.send(post_data);
+	connections.push(xmlHttp);
 	this.arguments = arguments;
 	xmlHttp.onreadystatechange=function() {
 	  	if (xmlHttp.readyState==4 && xmlHttp.status==200) {
-	  		console.log('network received');
 	    	this.data = xmlHttp.responseText;
 	    	var sliced = Array.prototype.slice.call(this.arguments, 3);
 	    	callback.bind(this).apply(this, sliced);
@@ -123,4 +159,14 @@ function isEmpty(obj) {
 	}
 
 	return true;
+}
+
+function findPath(node) {
+	var ret = [];
+	while (node != null) {
+		ret.push(node);
+		node = node.prev;
+	}
+
+	return ret;
 }
