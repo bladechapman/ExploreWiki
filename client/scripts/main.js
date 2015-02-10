@@ -58,7 +58,8 @@ function refreshNodes(data_arr, nodes, links, parent_var, url_var) {
 
 	nodes_dict[parent_node.name] = parent_node;
 	data_arr.forEach(function(data_name) {
-		if(data_name == "" || data_name.indexOf('en.wikipedia.org/') == -1 || data_name.indexOf('/wiki') == -1 || data_name.indexOf('#') != -1)
+		if(data_name == "" || data_name.indexOf('en.wikipedia.org/') == -1 || data_name.indexOf('/wiki') == -1 || data_name.indexOf('#') != -1
+			|| data_name.substring(8, data_name.length - 1).indexOf(":") != -1 || data_name.indexOf("Main_Page") != -1)
 			return;
 
 		if (data_name in nodes_dict) {
@@ -165,9 +166,15 @@ function refreshSim(parent_var, url_var) {
 						.text(function(d) {
 							return decodeURI(d.name.split('wiki/')[d.name.split('wiki/').length - 1]).replace(/_/g, ' ');
 						})
-						.style('font-weight', function(d) {
-							if(d.root) return 'bold';
-							return 'light';
+						.style({
+							'font-weight': function(d) {
+												if(d.root) return 'bold';
+												return 'light';
+											},
+							'text-decoration': function(d) {
+													if(d.collapsed) return "none";
+													return "underline"
+												}
 						})
 						.on('mouseover', function(d) {	//DRY THIS
 							$('#about').html('url:' + d.name)
@@ -239,8 +246,8 @@ $('#submit').click(function() {
 	if($('#start').val().indexOf('en.wikipedia.org') != -1) {
 		if($('#start').val().indexOf('http://') == -1)
 			$('#start').val('http://' + $('#start').val())
-		nodes_dict = {};
-		$('#about').html('')
+		// nodes_dict = {};
+		// $('#about').html('')
 		sendWrapper(null, $('#start').val());
 	}
 })
